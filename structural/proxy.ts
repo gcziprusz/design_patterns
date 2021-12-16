@@ -1,3 +1,4 @@
+
 interface Missile {
     fire():void;
 }
