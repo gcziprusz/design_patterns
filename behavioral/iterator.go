@@ -1,23 +1,33 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"sort"
+)
 
 type collection interface {
-	getIterator() *iterator
-	setIterator(*iterator)
+	ascIterator() *iterator
+	descIterator() *iterator
+	ageIterator() *iterator
 }
 
 type myCollection struct {
-	users    []user
-	iterator iterator
+	users        []user
+	asciterator  iterator
+	desciterator iterator
+	ageiterator  iterator
 }
 
-func (m *myCollection) getIterator() iterator {
-	return m.iterator
+func (m *myCollection) ascIterator() iterator {
+	return &myIterator{index: 0, reverse: false, users: m.users}
 }
 
-func (m *myCollection) setIterator(iterator iterator) {
-	m.iterator = iterator
+func (m *myCollection) descIterator() iterator {
+	return &myIterator{index: len(m.users) - 1, reverse: true, users: m.users}
+}
+
+func (m *myCollection) ageIterator(desc bool) iterator {
+	return newAgeIterator(desc, m.users)
 }
 
 type iterator interface {
@@ -58,6 +68,54 @@ func (i *myIterator) next() *user {
 	return nil
 }
 
+type ageIterator struct {
+	index int
+	desc  bool
+	users []user
+}
+
+func newAgeIterator(desc bool, users []user) *ageIterator {
+	index := 0
+	if desc == true {
+		index = len(users) - 1
+	}
+	sort.SliceStable(users, func(i, j int) bool {
+		return users[i].age < users[j].age
+	})
+	return &ageIterator{
+		desc:  desc,
+		users: users,
+		index: index,
+	}
+}
+
+func (a *ageIterator) has() bool {
+	if a.desc == true {
+		if a.index >= 0 {
+			return true
+		}
+	} else {
+		if a.index < len(a.users) {
+			return true
+		}
+	}
+	return false
+}
+
+func (a *ageIterator) next() *user {
+	if a.has() {
+		u := a.users[a.index]
+		if a.desc {
+			a.index--
+
+		} else {
+			a.index++
+		}
+		return &u
+	}
+	return nil
+}
+
 type user struct {
 	name string
 	age  int
@@ -77,20 +135,29 @@ func main() {
 		"Pista", 11,
 	}
 	users := []user{u1, u2, u3, u4}
-	ascIterator := &myIterator{index: 0, reverse: false, users: users}
-	descIterator := &myIterator{index: len(users) - 1, reverse: true, users: users}
-	uc := myCollection{users: users, iterator: ascIterator}
+	uc := myCollection{users: users}
 
-	fmt.Println("ASC ORDER")
-	it := uc.getIterator()
+	fmt.Println("ASC INDEX ORDER:")
+	it := uc.ascIterator()
 	for it.has() {
 		u := it.next()
 		fmt.Println("User: ", u.name, u.age)
 	}
 
-	fmt.Println("DESC ORDER")
-	uc.setIterator(descIterator)
-	it = uc.getIterator()
+	fmt.Println("DESC INDEX ORDER:")
+	it = uc.descIterator()
+	for it.has() {
+		u := it.next()
+		fmt.Println("User: ", u.name, u.age)
+	}
+	fmt.Println("ASC AGE ORDER:")
+	it = uc.ageIterator(false)
+	for it.has() {
+		u := it.next()
+		fmt.Println("User: ", u.name, u.age)
+	}
+	fmt.Println("DESC AGE ORDER:")
+	it = uc.ageIterator(true)
 	for it.has() {
 		u := it.next()
 		fmt.Println("User: ", u.name, u.age)
