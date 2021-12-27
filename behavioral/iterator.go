@@ -12,10 +12,7 @@ type collection interface {
 }
 
 type myCollection struct {
-	users        []user
-	asciterator  iterator
-	desciterator iterator
-	ageiterator  iterator
+	users []user
 }
 
 func (m *myCollection) ascIterator() iterator {
